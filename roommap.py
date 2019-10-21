@@ -1,3 +1,4 @@
+from gamemap import *
 roommap =[
         [1,1,1,1,1,1],
         [1,0,0,0,0,1],
@@ -24,10 +25,13 @@ def draw():
             drawimage = OBJECT_LIST[item]
             screen.blit(drawimage,(topleftx+ x*30,toplefty + y*30-drawimage.get_height()))
 
-def autogenroom(width,height,exittop,exitright):
+def autogenroom(roomnum):
     temproommap = []
     temprow = []
-
+    width = GAME_MAP[roomnum][2]
+    height = GAME_MAP[roomnum][1]
+    exittop = GAME_MAP[roomnum][3]
+    exitright = GAME_MAP[roomnum][4]
     #top row
     if exittop:
         temprow = [1] * int(width / 2)
@@ -44,7 +48,8 @@ def autogenroom(width,height,exittop,exitright):
         temproommap.append(temprow)
     temprow = [1] * width
     temproommap.append(temprow)
-    print (temproommap)
-autogenroom(7,7,True,True)
+    roommap = temproommap
+autogenroom(40)
+draw()
 
-
+#print(GAME_MAP[40][2])
