@@ -1,9 +1,17 @@
+from pgzero.builtins import *
+import random
 
+PLAYER_NAME = "Elsie"
+FRIEND1_NAME = "Cambrie"
+FRIEND2_NAME = "Abbie"
 ###############
 ##  OBJECTS  ##
 ###############
+LANDER_SECTOR = random.randint(1,24)
+LANDER_X = random.randint(2,11)
+LANDER_Y = random.randint(2,11)
 
-objects = {
+OBJECT_LIST = {
     0: [images.floor, None, "The floor is shiny and clean"],
     1: [images.pillar, images.full_shadow, "The wall is smooth and cold"],
     2: [images.soil, None, "It's like a desert. Or should that be dessert?"],

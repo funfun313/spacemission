@@ -8,7 +8,7 @@ def draw():
     global player_x, player_y
     screen.blit(images.backdrop, (0,0))
     screen.blit(images.astronaut, (player_x,player_y))
-    
+
 def gameloop():
     global player_x, player_y
     if keyboard.right:
