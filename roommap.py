@@ -1,5 +1,7 @@
 from gamemap import *
 from objects import *
+from scenery import *
+from player import *
 roommap =[
         [1,1,1,1,1,1],
         [1,0,0,0,0,1],
@@ -16,6 +18,11 @@ toplefty = 150
 #OBJECT_LIST = [images.floor,images.pillar,images.soil]
 roomheight = 0
 roomwidth = 0
+#########################
+#### Player Variables ###
+#########################
+playerx = 5
+playery = 2
 def draw():
     roomheight = len(roommap)
     roomwidth = len(roommap[0])
@@ -25,7 +32,11 @@ def draw():
             item = roommap[y][x]
             drawimage = OBJECT_LIST[item][0]
             screen.blit(drawimage,(topleftx+ x*30,toplefty + y*30-drawimage.get_height()))
+    drawplayer()
 
+def drawplayer():
+    playerimage = PLAYER["down"][0]
+    screen.blit(playerimage,(topleftx+ playerx*30,toplefty + playery*30-playerimage.get_height()))
 def autogenroom(roomnum):
     global roommap
     temproommap = []
@@ -72,6 +83,11 @@ def autogenroom(roomnum):
                 else:
                     temprow = temprow + [2] * (width)
                     temproommap.append(temprow)
+            if roomnum > 20:
+                #makes row next to building
+                for m in range(width):
+                    temproommap[height-1][m] = 1
+
     else:
         #top row
         if exittop:
@@ -96,7 +112,14 @@ def autogenroom(roomnum):
             temproommap.append(temprow)
         temprow = [1] * width
         temproommap.append(temprow)
+    #########################
+    ##     Add Scenery     ##
+    #########################
+    roomscenery =  scenery[roomnum]
+    for b in roomscenery:
+        temproommap[b[1]][b[2]] = b[0]
+
 
     roommap = temproommap
-autogenroom(25)
+autogenroom(2)
 #draw()

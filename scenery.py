@@ -1,4 +1,4 @@
-
+import random
 ###############
 ##  SCENERY  ##
 ###############
@@ -63,15 +63,3 @@ for room in range(1, 26):# Add random scenery in planet locations.
         scenery_item = random.choice([16, 28, 29, 30])
         scenery[room] = [[scenery_item, random.randint(2, 10),
                           random.randint(2, 10)]]
-
-# Use loops to add fences to the planet surface rooms.
-for room_coordinate in range(0, 13):
-    for room_number in [1, 2, 3, 4, 5]: # Add top fence
-        scenery[room_number] += [[31, 0, room_coordinate]]
-    for room_number in [1, 6, 11, 16, 21]: # Add left fence
-        scenery[room_number] += [[31, room_coordinate, 0]]
-    for room_number in [5, 10, 15, 20, 25]: # Add right fence
-        scenery[room_number] += [[31, room_coordinate, 12]]
-
-del scenery[21][-1] # Delete last fence panel in Room 21
-del scenery[25][-1] # Delete last fence panel in Room 25
