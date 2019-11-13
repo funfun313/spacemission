@@ -17,8 +17,8 @@ PLAYER = {
              images.spacesuit_front_2, images.spacesuit_front_3,
              images.spacesuit_front_4
              ]
-    }
 
+    }
 PLAYER_SHADOW = {
     "left": [images.spacesuit_left_shadow, images.spacesuit_left_1_shadow,
              images.spacesuit_left_2_shadow, images.spacesuit_left_3_shadow,

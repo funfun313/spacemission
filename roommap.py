@@ -23,6 +23,14 @@ roomwidth = 0
 #########################
 playerx = 5
 playery = 2
+playerframe = 0
+fromplayerx = 5
+fromplayery = 2
+playerimage = ""
+playerdirection = "down"
+playeroffsetx = 0
+playeroffsety = 0
+
 def draw():
     roomheight = len(roommap)
     roomwidth = len(roommap[0])
@@ -35,7 +43,7 @@ def draw():
     drawplayer()
 
 def drawplayer():
-    playerimage = PLAYER["down"][0]
+    playerimage = PLAYER[playerdirection][playerframe]
     screen.blit(playerimage,(topleftx+ playerx*30,toplefty + playery*30-playerimage.get_height()))
 def autogenroom(roomnum):
     global roommap
@@ -121,5 +129,43 @@ def autogenroom(roomnum):
 
 
     roommap = temproommap
+def gameLoop():
+    global playerx, playery, playerdirection, playerframe, playerimage, playeroffsetx, playeroffsety, fromplayerx
+    global fromplayery
+
+    #store original x and y
+    fromplayerx = playerx
+    fromplayery = playery
+
+    if playerframe == 0:
+
+        if keyboard.right:
+            playerx += 1
+            playerdirection = "right"
+        elif keyboard.left:
+            playerx -= 1
+            playerdirection = "left"
+        elif keyboard.up:
+            playery -= 1
+            playerdirection = "up"
+        elif keyboard.down:
+            playery += 1
+            playerdirection = "down"
+    else:
+        playerframe += 1
+        if playerframe == 5:
+            time.sleep(0.05)
+            playerframe = 0
+            playeroffsetx = 0
+            playeroffsety = 0
+        if playerdirection == "right":
+            playeroffsetx = -1 + 0.25 * playerframe
+        if playerdirection == "left":
+            playeroffsetx = 1 - 0.25 * playerframe
+        if playerdirection == "up":
+            playeroffsety = 1 - 0.25 * playerframe
+        if playerdirection == "down":
+            playeroffsety = -1 + 0.25 * playerframe
+
 autogenroom(2)
-#draw()
+clock.schedule_interval(gameLoop, 0.03)
