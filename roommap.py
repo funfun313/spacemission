@@ -2,6 +2,7 @@ from gamemap import *
 from objects import *
 from scenery import *
 from player import *
+import time
 roommap =[
         [1,1,1,1,1,1],
         [1,0,0,0,0,1],
@@ -18,6 +19,7 @@ toplefty = 150
 #OBJECT_LIST = [images.floor,images.pillar,images.soil]
 roomheight = 0
 roomwidth = 0
+currentroom = 31
 #########################
 #### Player Variables ###
 #########################
@@ -32,6 +34,8 @@ playeroffsetx = 0
 playeroffsety = 0
 
 def draw():
+    global roomheight
+    global roomwidth
     roomheight = len(roommap)
     roomwidth = len(roommap[0])
 
@@ -43,6 +47,7 @@ def draw():
     drawplayer()
 
 def drawplayer():
+    print (playerframe)
     playerimage = PLAYER[playerdirection][playerframe]
     screen.blit(playerimage,(topleftx+ playerx*30,toplefty + playery*30-playerimage.get_height()))
 def autogenroom(roomnum):
@@ -130,9 +135,17 @@ def autogenroom(roomnum):
 
     roommap = temproommap
 def gameLoop():
+    global currentroom
     global playerx, playery, playerdirection, playerframe, playerimage, playeroffsetx, playeroffsety, fromplayerx
     global fromplayery
 
+    if playerframe > 0:
+        playerframe += 1
+        if playerframe == 5:
+            playerframe = 0
+            time.sleep(0.05)
+            playeroffsetx = 0
+            playeroffsety = 0
     #store original x and y
     fromplayerx = playerx
     fromplayery = playery
@@ -142,30 +155,59 @@ def gameLoop():
         if keyboard.right:
             playerx += 1
             playerdirection = "right"
+            playerframe = 1
         elif keyboard.left:
             playerx -= 1
             playerdirection = "left"
+            playerframe = 1
         elif keyboard.up:
             playery -= 1
             playerdirection = "up"
+            playerframe = 1
         elif keyboard.down:
             playery += 1
             playerdirection = "down"
-    else:
-        playerframe += 1
-        if playerframe == 5:
-            time.sleep(0.05)
-            playerframe = 0
-            playeroffsetx = 0
-            playeroffsety = 0
-        if playerdirection == "right":
-            playeroffsetx = -1 + 0.25 * playerframe
-        if playerdirection == "left":
-            playeroffsetx = 1 - 0.25 * playerframe
-        if playerdirection == "up":
-            playeroffsety = 1 - 0.25 * playerframe
-        if playerdirection == "down":
-            playeroffsety = -1 + 0.25 * playerframe
+            playerframe = 1
+        #print(roommap)
+        #print(playerx)
+        #print(playery)
 
-autogenroom(2)
+        #moving between rooms
+        print(playerx, playery, roomwidth, roomheight)
+        if playerx == roomwidth:
+            currentroom += 1
+            autogenroom(currentroom)
+            playerx = 1 #zero once left side doors
+            playery = int(roomheight / 2)
+            #print("HI")
+            playerframe = 0
+        if playery == -1:
+            currentroom -= 5
+            autogenroom(currentroom)
+            playerx = int(roomwidth / 2)
+            playery = roomheight - 2
+            playerframe = 0
+        if roommap[playery][playerx] not in items_player_may_stand_on:
+
+            playery = fromplayery
+            playerx = fromplayerx
+            playerframe = 0
+
+    if playerdirection == "right":
+        playeroffsetx = -1 + 0.25 * playerframe
+    if playerdirection == "left":
+        playeroffsetx = 1 - 0.25 * playerframe
+    if playerdirection == "up":
+        playeroffsety = 1 - 0.25 * playerframe
+    if playerdirection == "down":
+        playeroffsety = -1 + 0.25 * playerframe
+
+
+
+
+
+
+
+
+autogenroom(currentroom)
 clock.schedule_interval(gameLoop, 0.03)
