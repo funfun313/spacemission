@@ -2,9 +2,9 @@
 ##    MAP    ##
 ###############
 
-PLAYER_NAME = "Tamasin"
-FRIEND1_NAME = "Samantha"
-FRIEND2_NAME = "Brandon"
+PLAYER_NAME = "Elsie"
+FRIEND1_NAME = "Cambrie"
+FRIEND2_NAME = "Abbie"
 
 MAP_WIDTH = 5
 MAP_HEIGHT = 10

@@ -14,12 +14,13 @@ roommap =[
 ]
 WIDTH = 800
 HEIGHT = 600
+TILESIZE = 30
 topleftx = 100
 toplefty = 150
 #OBJECT_LIST = [images.floor,images.pillar,images.soil]
 roomheight = 0
 roomwidth = 0
-currentroom = 32
+currentroom = 31
 #########################
 #### Player Variables ###
 #########################
@@ -32,6 +33,10 @@ playerimage = ""
 playerdirection = "down"
 playeroffsetx = 0
 playeroffsety = 0
+playerimageshadow = PLAYER_SHADOW[playerdirection][playerframe]
+
+#COLORS
+RED =(255,0,0)
 
 def draw():
     global roomheight
@@ -39,18 +44,35 @@ def draw():
     roomheight = len(roommap)
     roomwidth = len(roommap[0])
 
-    screen.clear()
+    #screen.clear()
+    #make outer window
+    box = Rect((0,150),(800,600))
+    screen.draw.filled_rect(box, RED)
+    box = Rect((0,0),(800,toplefty + (roomheight-1)* TILESIZE))
+    screen.surface.set_clip(box)
+    #stage 1 - draw the floor and items the player may stand on
+    if currentroom < 26:
+        floortype = 2
+    else:
+        floortype = 0
     for y in range(roomheight):
         for x in range(roomwidth):
-            item = roommap[y][x]
-            drawimage = OBJECT_LIST[item][0]
-            screen.blit(drawimage,(topleftx+ x*30,toplefty + y*30-drawimage.get_height()))
+            drawimage = OBJECT_LIST[floortype][0]
+            screen.blit(drawimage,(topleftx+ x*TILESIZE,toplefty + y*TILESIZE-drawimage.get_height()))
+            if roommap[y][x] in items_player_may_stand_on:
+                drawimage = OBJECT_LIST[roommap[y][x]][0]
+                screen.blit(drawimage,(topleftx+ x*TILESIZE,toplefty + y*TILESIZE-drawimage.get_height()))
     drawplayer()
+def drawobject():
+    drawimage = OBJECT_LIST[item][0]
+    screen.blit(drawimage,(topleftx+ x*TILESIZE,toplefty + y*TILESIZE-drawimage.get_height()))
 
 def drawplayer():
     #print (playerframe)
     playerimage = PLAYER[playerdirection][playerframe]
-    screen.blit(playerimage,(topleftx+ playerx*30,toplefty + playery*30-playerimage.get_height()))
+    screen.blit(playerimage,(topleftx+ (playerx+playeroffsetx)*TILESIZE,toplefty + (playery+playeroffsety)*TILESIZE-playerimage.get_height()))
+    playerimageshadow = PLAYER_SHADOW[playerdirection][playerframe]
+    screen.blit(playerimageshadow,(topleftx+ (playerx+playeroffsetx)*TILESIZE,toplefty +(playery+playeroffsety)*TILESIZE))
 def autogenroom(roomnum):
     global roommap
     temproommap = []
