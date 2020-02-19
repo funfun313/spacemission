@@ -13,10 +13,10 @@ roommap =[
         [1,1,1,1,1,1]
 ]
 WIDTH = 800
-HEIGHT = 600
+HEIGHT = 660
 TILESIZE = 30
 topleftx = 100
-toplefty = 150
+toplefty = 240
 #OBJECT_LIST = [images.floor,images.pillar,images.soil]
 roomheight = 0
 roomwidth = 0
@@ -41,12 +41,17 @@ RED =(255,0,0)
 def draw():
     global roomheight
     global roomwidth
-    roomheight = len(roommap)
-    roomwidth = len(roommap[0])
+    global topleftx
+    roomheight = GAME_MAP[currentroom][1]
+    roomwidth = GAME_MAP[currentroom][2]
 
+    topleftx = (WIDTH-roomwidth*TILESIZE)/2
+    #print(roomheight)
+    #print(roomwidth)
+    #print(currentroom)
     #screen.clear()
     #make outer window
-    box = Rect((0,150),(800,600))
+    box = Rect((0,150),(800,660))
     screen.draw.filled_rect(box, RED)
     box = Rect((0,0),(800,toplefty + (roomheight-1)* TILESIZE))
     screen.surface.set_clip(box)
@@ -57,12 +62,33 @@ def draw():
         floortype = 0
     for y in range(roomheight):
         for x in range(roomwidth):
+            #first put tile/dirt down
             drawimage = OBJECT_LIST[floortype][0]
             screen.blit(drawimage,(topleftx+ x*TILESIZE,toplefty + y*TILESIZE-drawimage.get_height()))
+            #then add items we can stand on
             if roommap[y][x] in items_player_may_stand_on:
                 drawimage = OBJECT_LIST[roommap[y][x]][0]
                 screen.blit(drawimage,(topleftx+ x*TILESIZE,toplefty + y*TILESIZE-drawimage.get_height()))
+    #special case pressure plate in room 26
+    if currentroom == 26:
+        drawimage = OBJECT_LIST[39][0]
+        screen.blit(drawimage,(topleftx+ 2*TILESIZE,toplefty + 8*TILESIZE-drawimage.get_height()))
+        itemonpad = roommap[8][2]
+        #print(roommap)
+        #print(itemonpad)
+        if itemonpad > 0:
+            drawimage = OBJECT_LIST[itemonpad][0]
+            screen.blit(drawimage,(topleftx+ 2*TILESIZE,toplefty + 8*TILESIZE-drawimage.get_height()))
+    #print(roommap)
+    for y in range(roomheight):
+        for x in range(roomwidth):
+            #not go back and add the objects on top of the floor
+            item_here = roommap[y][x]
+            drawimage = OBJECT_LIST[item_here][0]
+            screen.blit(drawimage,(topleftx+ x*TILESIZE,toplefty + y*TILESIZE-drawimage.get_height()))
     drawplayer()
+    screen.surface.set_clip(None)
+
 def drawobject():
     drawimage = OBJECT_LIST[item][0]
     screen.blit(drawimage,(topleftx+ x*TILESIZE,toplefty + y*TILESIZE-drawimage.get_height()))
@@ -276,6 +302,6 @@ def gameLoop():
 
 
 
-
+#print(currentroom)
 autogenroom(currentroom)
 clock.schedule_interval(gameLoop, 0.03)
