@@ -36,7 +36,7 @@ playeroffsety = 0
 playerimageshadow = PLAYER_SHADOW[playerdirection][playerframe]
 
 #COLORS
-RED =(255,0,0)
+RED =(128,0,0)
 
 def draw():
     global roomheight
@@ -83,9 +83,27 @@ def draw():
     for y in range(roomheight):
         for x in range(roomwidth):
             #not go back and add the objects on top of the floor
+            #skip 255 to allow for extra wide items
             item_here = roommap[y][x]
-            drawimage = OBJECT_LIST[item_here][0]
-            screen.blit(drawimage,(topleftx+ x*TILESIZE,toplefty + y*TILESIZE-drawimage.get_height()))
+            if item_here not in items_player_may_stand_on + [255]:
+
+                #transparent front wall
+                #WORK IN PROGRESS...
+
+                drawimage = OBJECT_LIST[item_here][0]
+                screen.blit(drawimage,(topleftx+ x*TILESIZE,toplefty + y*TILESIZE-drawimage.get_height()))
+
+                #add shadow if there should be one
+                if OBJECT_LIST[item_here][1] is not None:
+                    shadowimage = OBJECT_LIST[item_here][1]
+                    if shadowimage in [images.half_shadow, images.full_shadow]:
+                        shadow_width = int(drawimage.get_width()/TILESIZE)
+                        #repeat the shadow
+                        for i in range(1, shadow_width):
+                            screen.blit(shadowimage,(topleftx+ (x+i)*TILESIZE,toplefty + y*TILESIZE))
+                    else:
+                    screen.blit(shadowimage,(topleftx+ x*TILESIZE,toplefty + y*TILESIZE))
+
     drawplayer()
     screen.surface.set_clip(None)
 
@@ -207,6 +225,11 @@ def autogenroom(roomnum):
         roomscenery =  scenery[roomnum]
         for b in roomscenery:
             temproommap[b[1]][b[2]] = b[0]
+            temp_img = OBJECT_LIST[b[0]][0]
+            temp_width = temp_img.get_width()
+            temp_tiles = int(temp_width/TILESIZE)
+            for i in range(1, temp_tiles):
+                temproommap[b[1]][b[2] + i] = 255
 
 
     roommap = temproommap
@@ -214,6 +237,7 @@ def autogenroom(roomnum):
     global roomwidth
     roomheight = len(roommap)
     roomwidth = len(roommap[0])
+
 def gameLoop():
     global currentroom
     global playerx, playery, playerdirection, playerframe, playerimage, playeroffsetx, playeroffsety, fromplayerx
@@ -221,9 +245,9 @@ def gameLoop():
     global roomwidth
     if playerframe > 0:
         playerframe += 1
+        time.sleep(0.05)
         if playerframe == 5:
             playerframe = 0
-            time.sleep(0.05)
             playeroffsetx = 0
             playeroffsety = 0
     #store original x and y
@@ -282,7 +306,6 @@ def gameLoop():
             print(playery)
             playerframe = 0
         if roommap[playery][playerx] not in items_player_may_stand_on:
-
             playery = fromplayery
             playerx = fromplayerx
             playerframe = 0
