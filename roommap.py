@@ -69,6 +69,7 @@ def draw():
             if roommap[y][x] in items_player_may_stand_on:
                 drawimage = OBJECT_LIST[roommap[y][x]][0]
                 screen.blit(drawimage,(topleftx+ x*TILESIZE,toplefty + y*TILESIZE-drawimage.get_height()))
+
     #special case pressure plate in room 26
     if currentroom == 26:
         drawimage = OBJECT_LIST[39][0]
@@ -89,6 +90,9 @@ def draw():
 
                 #transparent front wall
                 #WORK IN PROGRESS...
+                if (currentroom in [21,22,23,24,25] and y == roomheight - 1 and
+                roommap[y][x] == 1):
+                    print("transparent wall", x, y)
 
                 drawimage = OBJECT_LIST[item_here][0]
                 screen.blit(drawimage,(topleftx+ x*TILESIZE,toplefty + y*TILESIZE-drawimage.get_height()))
@@ -99,12 +103,12 @@ def draw():
                     if shadowimage in [images.half_shadow, images.full_shadow]:
                         shadow_width = int(drawimage.get_width()/TILESIZE)
                         #repeat the shadow
-                        for i in range(1, shadow_width):
+                        for i in range(shadow_width):
                             screen.blit(shadowimage,(topleftx+ (x+i)*TILESIZE,toplefty + y*TILESIZE))
                     else:
-                    screen.blit(shadowimage,(topleftx+ x*TILESIZE,toplefty + y*TILESIZE))
-
-    drawplayer()
+                        screen.blit(shadowimage,(topleftx+ x*TILESIZE,toplefty + y*TILESIZE))
+        if playery == y:
+            drawplayer()
     screen.surface.set_clip(None)
 
 def drawobject():
@@ -175,10 +179,19 @@ def autogenroom(roomnum):
                 else:
                     temprow = temprow + [2] * (width)
                     temproommap.append(temprow)
-            if roomnum > 20:
+            if roomnum > 21:
                 #makes row next to building
                 for m in range(width):
                     temproommap[height-1][m] = 1
+            if roomnum == 21:
+                #row next to building with an entrance
+                for m in range(width):
+                    if m == int(width / 2) or m == int(width/2) + 1:
+                        temproommap[height-1][m] = 2
+                    else:
+                        temproommap[height-1][m] = 1
+
+
 
     else:
         #top row
@@ -251,11 +264,11 @@ def gameLoop():
             playeroffsetx = 0
             playeroffsety = 0
     #store original x and y
-    fromplayerx = playerx
-    fromplayery = playery
+
 
     if playerframe == 0:
-
+        fromplayerx = playerx
+        fromplayery = playery
         if keyboard.right:
             playerx += 1
             playerdirection = "right"
@@ -278,30 +291,38 @@ def gameLoop():
 
         #moving between rooms
         #print(playerx, playery, roomwidth, roomheight)
+
         if playerx == roomwidth:
+            #move right
             currentroom += 1
             autogenroom(currentroom)
             playerx = 0 #zero once left side doors
-            playery = int(roomheight / 2)
-            #print("HI")
+            if currentroom > 25:
+                playery = int(roomheight / 2)
             playerframe = 0
         if playerx == -1:
+            #room left
             currentroom -= 1
             autogenroom(currentroom)
             playerx = roomwidth-1
-            playery = int(roomheight / 2)
+            if currentroom > 25:
+                playery = int(roomheight / 2)
             #print("HI")
             playerframe = 0
         if playery == -1:
+            #room up
             currentroom -= 5
             autogenroom(currentroom)
-            playerx = int(roomwidth / 2)
+            if currentroom > 25 or currentroom == 21:
+                playerx = int(roomwidth / 2)
             playery = roomheight - 1
             playerframe = 0
         if playery == roomheight:
+            #room down
             currentroom += 5
             autogenroom(currentroom)
-            playerx = int(roomwidth / 2)
+            if currentroom > 25 or currentroom == 26:
+                playerx = int(roomwidth / 2)
             playery = 1
             print(playery)
             playerframe = 0
@@ -318,6 +339,9 @@ def gameLoop():
         playeroffsety = 1 - 0.25 * playerframe
     if playerdirection == "down":
         playeroffsety = -1 + 0.25 * playerframe
+    if playerframe == 0:
+        playeroffsetx = 0
+        playeroffsety = 0
 
 
 
