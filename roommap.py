@@ -38,6 +38,9 @@ playerimageshadow = PLAYER_SHADOW[playerdirection][playerframe]
 #COLORS
 RED =(128,0,0)
 
+PILLARS = [images.pillar, images.pillar_95, images.pillar_80, images.pillar_60, images.pillar_50]
+wall_transparency_frame = 0
+
 def draw():
     global roomheight
     global roomwidth
@@ -87,14 +90,12 @@ def draw():
             #skip 255 to allow for extra wide items
             item_here = roommap[y][x]
             if item_here not in items_player_may_stand_on + [255]:
-
+                drawimage = OBJECT_LIST[item_here][0]
                 #transparent front wall
                 #WORK IN PROGRESS...
-                if (currentroom in [21,22,23,24,25] and y == roomheight - 1 and
-                roommap[y][x] == 1):
-                    print("transparent wall", x, y)
+                if y == playery + 1 and x != 0 and x != roomwidth-1 and roommap[y][x] == 1:
+                    drawimage = PILLARS[wall_transparency_frame]
 
-                drawimage = OBJECT_LIST[item_here][0]
                 screen.blit(drawimage,(topleftx+ x*TILESIZE,toplefty + y*TILESIZE-drawimage.get_height()))
 
                 #add shadow if there should be one
@@ -121,6 +122,24 @@ def drawplayer():
     screen.blit(playerimage,(topleftx+ (playerx+playeroffsetx)*TILESIZE,toplefty + (playery+playeroffsety)*TILESIZE-playerimage.get_height()))
     playerimageshadow = PLAYER_SHADOW[playerdirection][playerframe]
     screen.blit(playerimageshadow,(topleftx+ (playerx+playeroffsetx)*TILESIZE,toplefty +(playery+playeroffsety)*TILESIZE))
+
+def drawtext(thetext, linenum):
+    box = Rect((0,150),(800,100))
+    screen.draw.filled_rect(box, (0,0,0))
+    screen.draw.text(thetext, (20,linenum* 35 - 20), color = (0,255,0))
+
+
+def adjust_wall_transparency():
+    global wall_transparency_frame
+
+    #fade wall out
+    if playery == roomheight - 2 and roommap[playery + 1][playerx] == 1 and wall_transparency_frame < 4:
+        wall_transparency_frame +=1
+
+    #fade wall in
+    if (playery != roomheight - 2 or roommap[playery + 1][playerx] != 1) and wall_transparency_frame > 0:
+        wall_transparency_frame -= 1
+
 def autogenroom(roomnum):
     global roommap
     temproommap = []
@@ -250,7 +269,8 @@ def autogenroom(roomnum):
     global roomwidth
     roomheight = len(roommap)
     roomwidth = len(roommap[0])
-
+def startroom():
+    drawtext("You are here: " + GAME_MAP[currentroom][0],1)
 def gameLoop():
     global currentroom
     global playerx, playery, playerdirection, playerframe, playerimage, playeroffsetx, playeroffsety, fromplayerx
@@ -295,6 +315,7 @@ def gameLoop():
         if playerx == roomwidth:
             #move right
             currentroom += 1
+            startroom()
             autogenroom(currentroom)
             playerx = 0 #zero once left side doors
             if currentroom > 25:
@@ -303,6 +324,7 @@ def gameLoop():
         if playerx == -1:
             #room left
             currentroom -= 1
+            startroom()
             autogenroom(currentroom)
             playerx = roomwidth-1
             if currentroom > 25:
@@ -312,6 +334,7 @@ def gameLoop():
         if playery == -1:
             #room up
             currentroom -= 5
+            startroom()
             autogenroom(currentroom)
             if currentroom > 25 or currentroom == 21:
                 playerx = int(roomwidth / 2)
@@ -320,6 +343,7 @@ def gameLoop():
         if playery == roomheight:
             #room down
             currentroom += 5
+            startroom()
             autogenroom(currentroom)
             if currentroom > 25 or currentroom == 26:
                 playerx = int(roomwidth / 2)
@@ -351,4 +375,5 @@ def gameLoop():
 
 #print(currentroom)
 autogenroom(currentroom)
-clock.schedule_interval(gameLoop, 0.03)
+clock.schedule_interval(gameLoop, 0.02)
+clock.schedule_interval(adjust_wall_transparency, 0.05)
