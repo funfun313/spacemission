@@ -124,9 +124,10 @@ def drawplayer():
     screen.blit(playerimageshadow,(topleftx+ (playerx+playeroffsetx)*TILESIZE,toplefty +(playery+playeroffsety)*TILESIZE))
 
 def drawtext(thetext, linenum):
-    box = Rect((0,150),(800,100))
+    text_lines = [15,50]
+    box = Rect((0,text_lines[linenum]),(800,35))
     screen.draw.filled_rect(box, (0,0,0))
-    screen.draw.text(thetext, (20,linenum* 35 - 20), color = (0,255,0))
+    screen.draw.text(thetext, (20,text_lines[linenum]), color = (255,255,255))
 
 
 def adjust_wall_transparency():
@@ -270,7 +271,8 @@ def autogenroom(roomnum):
     roomheight = len(roommap)
     roomwidth = len(roommap[0])
 def startroom():
-    drawtext("You are here: " + GAME_MAP[currentroom][0],1)
+    drawtext("You are here: " + GAME_MAP[currentroom][0],0)
+    drawtext("Testing line 2", 1)
 def gameLoop():
     global currentroom
     global playerx, playery, playerdirection, playerframe, playerimage, playeroffsetx, playeroffsety, fromplayerx
