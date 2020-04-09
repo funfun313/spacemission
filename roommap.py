@@ -2,6 +2,7 @@ from gamemap import *
 from objects import *
 from scenery import *
 from player import *
+from props import *
 import time
 roommap =[
         [1,1,1,1,1,1],
@@ -21,6 +22,7 @@ toplefty = 240
 roomheight = 0
 roomwidth = 0
 currentroom = 31
+firstdraw = True
 #########################
 #### Player Variables ###
 #########################
@@ -42,7 +44,7 @@ PILLARS = [images.pillar, images.pillar_95, images.pillar_80, images.pillar_60, 
 wall_transparency_frame = 0
 
 def draw():
-    global roomheight
+    global roomheight, firstdraw
     global roomwidth
     global topleftx
     roomheight = GAME_MAP[currentroom][1]
@@ -111,6 +113,10 @@ def draw():
         if playery == y:
             drawplayer()
     screen.surface.set_clip(None)
+    if firstdraw:
+        display_inventory()
+        startroom()
+        firstdraw = False
 
 def drawobject():
     drawimage = OBJECT_LIST[item][0]
@@ -264,6 +270,22 @@ def autogenroom(roomnum):
             for i in range(1, temp_tiles):
                 temproommap[b[1]][b[2] + i] = 255
 
+    #############################
+    ######## Add Props  #########
+    #############################
+    for propnum, prop in propslist.items():
+        prop_room = prop[0]
+        prop_y = prop[1]
+        prop_x = prop[2]
+        if prop_room == currentroom and temproommap[prop_y][prop_x] in [0,2,39]:
+            #does the prop belong in this room and is it going to be on a floor tile
+            temproommap[prop_y][prop_x] = propnum
+            prop_image = OBJECT_LIST[propnum][0]
+            pimage_width = prop_image.get_width()
+            pimage_tiles = int(pimage_width / TILESIZE)
+            for tnum in range(1, pimage_tiles):
+                temproommap[prop_y][prop_x + tnum] = 255
+
 
     roommap = temproommap
     global roomheight
@@ -307,13 +329,8 @@ def gameLoop():
             playery += 1
             playerdirection = "down"
             playerframe = 1
-        #print(roommap)
-        #print(playerx)
-        #print(playery)
 
         #moving between rooms
-        #print(playerx, playery, roomwidth, roomheight)
-
         if playerx == roomwidth:
             #move right
             currentroom += 1
@@ -352,6 +369,10 @@ def gameLoop():
             playery = 1
             print(playery)
             playerframe = 0
+
+        if keyboard.e:
+            pick_up_prop()
+
         if roommap[playery][playerx] not in items_player_may_stand_on:
             playery = fromplayery
             playerx = fromplayerx
@@ -369,10 +390,65 @@ def gameLoop():
         playeroffsetx = 0
         playeroffsety = 0
 
+#prop functions
+def find_prop_startx():
+    tempx = playerx
+    while roommap[playery][tempx] == 255:
+        tempx -= 1
+    return tempx
 
+def get_item_under_player():
+    item_x = find_prop_startx()
+    itemnum = roommap[playery][item_x]
+    return itemnum
 
+def pick_up_prop():
+    itemnum = get_item_under_player()
+    floortype = 0
+    if itemnum in items_player_may_carry:
+        if currentroom < 26:
+            floortype = 2
+        #elif currentroom == 26 and playerx
+        add_item_to_pockets(itemnum)
+        roommap[playery][playerx] = floortype
+        drawtext("Now carrying " + OBJECT_LIST[itemnum][3], 0)
+        sounds.pickup.play()
+        time.sleep(0.5)
+    else:
+        drawtext("You can't carry that!", 0)
 
+def add_item_to_pockets(itemnum):
+    global selected_item, item_carrying
+    in_my_pockets.append(itemnum)
+    selected_item = len(in_my_pockets) - 1
+    item_carrying = in_my_pockets[selected_item]
+    display_inventory()
+    print(in_my_pockets)
+    propslist[itemnum][0] = 0
 
+def display_inventory():
+    box =  Rect((0,45),(800, 105))
+    screen.draw.filled_rect(box, (0,0,0))
+
+    if len(in_my_pockets) == 0:
+        return
+
+    start_display = (selected_item // 16) * 16
+    list_to_show = in_my_pockets[start_display: start_display + 16]
+    selected_marker = selected_item % 16
+
+    for i in range(len(list_to_show)):
+        itemnum =  list_to_show[i]
+        img =  OBJECT_LIST[itemnum][0]
+        screen.blit(img, (25 + 46 * i, 90))
+
+    marker_left = selected_marker * 46 - 3
+    box = Rect((marker_left + 22, 85), (40,40))
+    screen.draw.rect(box, (255,255,255))
+
+    #show description
+    desc =  OBJECT_LIST[item_carrying][2]
+    screen.draw.text(desc, (20,130), color = "white")
 
 
 #print(currentroom)
