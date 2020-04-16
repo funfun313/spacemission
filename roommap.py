@@ -300,6 +300,8 @@ def gameLoop():
     global playerx, playery, playerdirection, playerframe, playerimage, playeroffsetx, playeroffsety, fromplayerx
     global fromplayery
     global roomwidth
+    global selected_item
+    global item_carrying
     if playerframe > 0:
         playerframe += 1
         time.sleep(0.05)
@@ -370,8 +372,18 @@ def gameLoop():
             print(playery)
             playerframe = 0
 
-        if keyboard.e:
+        if keyboard.g:
             pick_up_prop()
+        if keyboard.d and item_carrying:
+            drop_prop(fromplayerx,fromplayery)
+            #leave the item behind
+        if keyboard.tab and len(in_my_pockets) > 0:
+            selected_item += 1
+            if selected_item >= len(in_my_pockets):
+                selected_item = 0
+            item_carrying = in_my_pockets[selected_item]
+            display_inventory()
+            time.sleep(0.2)
 
         if roommap[playery][playerx] not in items_player_may_stand_on:
             playery = fromplayery
@@ -416,6 +428,34 @@ def pick_up_prop():
         time.sleep(0.5)
     else:
         drawtext("You can't carry that!", 0)
+
+def drop_prop(xpos, ypos):
+    #is there another prop in the way?
+    if roommap[ypos][xpos] in [0,2,39]:
+        propslist[item_carrying][0] = currentroom
+        propslist[item_carrying][1]= ypos
+        propslist[item_carrying][2] = xpos
+        roommap[ypos][xpos] = item_carrying
+        drawtext("You have dropped" + OBJECT_LIST[item_carrying][3], 0)
+        sounds.drop.play()
+        remove_prop_from_pockets(item_carrying)
+        time.sleep(0.5)
+    else:
+        drawtext("You can't drop that there!", 0)
+        time.sleep(0.5)
+def remove_prop_from_pockets(propitem):
+    global selected_item, item_carrying
+    #take the item out of pockets
+    in_my_pockets.remove(propitem)
+    selected_item -= 1
+    if selected_item <0:
+        selected_item = 0
+    if len(in_my_pockets) == 0:
+        item_carrying = False
+    else:
+        item_carrying = in_my_pockets[selected_item]
+    display_inventory()
+
 
 def add_item_to_pockets(itemnum):
     global selected_item, item_carrying
