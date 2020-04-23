@@ -369,7 +369,7 @@ def gameLoop():
             if currentroom > 25 or currentroom == 26:
                 playerx = int(roomwidth / 2)
             playery = 1
-            print(playery)
+            #print(playery)
             playerframe = 0
 
         if keyboard.g:
@@ -384,6 +384,9 @@ def gameLoop():
             item_carrying = in_my_pockets[selected_item]
             display_inventory()
             time.sleep(0.2)
+        if keyboard.space:
+            examine_prop()
+
 
         if roommap[playery][playerx] not in items_player_may_stand_on:
             playery = fromplayery
@@ -465,6 +468,28 @@ def add_item_to_pockets(itemnum):
     display_inventory()
     print(in_my_pockets)
     propslist[itemnum][0] = 0
+def examine_prop():
+    itemnum = get_item_under_player()
+    item_leftx = find_prop_startx()
+    if itemnum in [0,2]:
+        #this is just floor dont examine
+        return
+    examine_text = "You see: " + OBJECT_LIST[itemnum][2]
+
+    #handle hidden items
+    for propnum, details in propslist.items():
+        if details[0] == currentroom:
+            #prop is in the currentroom
+            print(propnum, details)
+            if (details[1] == playery and details[2] == item_leftx
+                and roommap[details[1]][details[2]] != propnum):
+                    examine_text = "You found " + OBJECT_LIST[propnum][3]
+                    sounds.combine.play()
+    drawtext(examine_text, 0)
+    for i in range(roomheight):
+        print(roommap[i])
+    time.sleep(0.5)
+
 
 def display_inventory():
     box =  Rect((0,45),(800, 105))
@@ -489,6 +514,31 @@ def display_inventory():
     #show description
     desc =  OBJECT_LIST[item_carrying][2]
     screen.draw.text(desc, (20,130), color = "white")
+
+#################################
+############ USE OBJECTS ########
+#################################
+
+def use_prop():
+    use_message = "You fiddle around with it but don't get anywhere."
+    standard_responses = {
+        4: "Air is running out! You can't take this lying down!",
+        6: "This is no time to sit around!",
+        7: "This is no time to sit around!",
+        32: "It shakes and rumbles, but nothing else happens.",
+        34: "Ah! That's better. Now wash your hands.",
+        35: "You wash your hands and shake the water off.",
+        37: "The test tubes smoke slightly as you shake them.",
+        54: "You chew the gum. It's sticky like glue.",
+        55: "The yoyo bounces up and down, slightly slower than on Earth",
+        56: "It's a bit too fiddly. Can you thread it on something?",
+        59: "You need to fix the leak before you can use the canister",
+        61: "You try signalling with the mirror, but nobody can see you.",
+        62: "Don't throw resources away. Things might come in handy...",
+        67: "To enjoy yummy space food, just add water!",
+        75: "You are at Sector: " + str(current_room) + " // X: " \
+            + str(player_x) + " // Y: " + str(player_y)
+        }
 
 
 #print(currentroom)
