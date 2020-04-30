@@ -37,6 +37,15 @@ playeroffsetx = 0
 playeroffsety = 0
 playerimageshadow = PLAYER_SHADOW[playerdirection][playerframe]
 
+######################################
+########### GAME VARIABLES #############
+#######################################
+air, energy = 100,100
+suit_stitched, air_fixed = False, False
+launch_frame = 0
+
+
+
 #COLORS
 RED =(128,0,0)
 
@@ -113,6 +122,7 @@ def draw():
         if playery == y:
             drawplayer()
     screen.surface.set_clip(None)
+    draw_energy_air()
     if firstdraw:
         display_inventory()
         startroom()
@@ -134,7 +144,17 @@ def drawtext(thetext, linenum):
     box = Rect((0,text_lines[linenum]),(800,35))
     screen.draw.filled_rect(box, (0,0,0))
     screen.draw.text(thetext, (20,text_lines[linenum]), color = (255,255,255))
-
+def draw_energy_air():
+    box = Rect((20,765),(350,20))
+    screen.draw.filled_rect(box, (0,0,0))
+    screen.draw.text("AIR", (20,765), color =(0,0,255))
+    screen.draw.text("ENERGY", (180,765), color =(255,255,0))
+    if air > 0:
+        box = Rect((50, 765), (air, 20))
+        screen.draw.filled_rect(box, (0,0,255))
+    if energy > 0:
+        box = Rect((250, 765), (energy, 20))
+        screen.draw.filled_rect(box, (255,255,0))
 
 def adjust_wall_transparency():
     global wall_transparency_frame
@@ -386,6 +406,8 @@ def gameLoop():
             time.sleep(0.2)
         if keyboard.space:
             examine_prop()
+        if keyboard.u:
+            use_prop()
 
 
         if roommap[playery][playerx] not in items_player_may_stand_on:
@@ -484,6 +506,7 @@ def examine_prop():
             if (details[1] == playery and details[2] == item_leftx
                 and roommap[details[1]][details[2]] != propnum):
                     examine_text = "You found " + OBJECT_LIST[propnum][3]
+                    add_item_to_pockets(propnum)
                     sounds.combine.play()
     drawtext(examine_text, 0)
     for i in range(roomheight):
@@ -536,9 +559,105 @@ def use_prop():
         61: "You try signalling with the mirror, but nobody can see you.",
         62: "Don't throw resources away. Things might come in handy...",
         67: "To enjoy yummy space food, just add water!",
-        75: "You are at Sector: " + str(current_room) + " // X: " \
-            + str(player_x) + " // Y: " + str(player_y)
+        75: "You are at Sector: " + str(currentroom) + " // X: " \
+            + str(playerx) + " // Y: " + str(playery)
         }
+    prop_standing_on = get_item_under_player()
+    for this_prop in [prop_standing_on, item_carrying]:
+        if this_prop in standard_responses:
+            use_message = standard_responses[this_prop]
+    drawtext(use_message, 0)
+    time.sleep(0.5)
+
+    #code for specific items
+
+    if item_carrying == 70 or prop_standing_on == 70:
+        use_message = "Banging tunes!"
+        sounds.steelmusic.play(2)
+    elif prop_standing_on == 11:
+        use_message = "AIR: " + str(air) + \
+                  "% / ENERGY " + str(energy) + "% / "
+    if not suit_stitched:
+        use_message += "*ALERT* SUIT FABRIC TORN / "
+    if not air_fixed:
+        use_message += "*ALERT* SUIT AIR BOTTLE MISSING"
+    if suit_stitched and air_fixed:
+        use_message += " SUIT OK"
+        draw_text(use_message, 0)
+        sounds.say_status_report.play()
+        time.sleep(0.5)
+        # If "on" the computer, player intention is clearly status update.
+        # Return to stop another object use accidentally overriding this.
+        return
+    elif item_carrying == 60 or prop_standing_on == 60:
+        use_message = "You fix " + OBJECT_LIST[60][3] + " to the suit"
+        air_fixed = True
+        air = 90
+        #air_countdown()
+        remove_prop_from_pockets(60)
+    elif (item_carrying == 58 or prop_standing_on == 58) \
+    and not suit_stitched:
+        use_message = "You use " + OBJECT_LIST[56][3] + \
+                      " to repair the suit fabric"
+        suit_stitched = True
+        remove_prop_from_pockets(58)
+
+    elif item_carrying == 72 or prop_standing_on == 72:
+        use_message = "You radio for help. A rescue ship is coming. \
+        Rendezvous Sector 13, outside."
+        propslist[40][0] = 13
+
+    elif (item_carrying == 66 or prop_standing_on == 66) \
+            and currentroom in outdoor_rooms:
+        use_message = "You dig..."
+        if (currentroom == LANDER_SECTOR
+            and playerx == LANDER_X
+            and playery == LANDER_Y):
+            add_item_to_pockets(71)
+            use_message = "You found the Poodle lander!"
+    elif prop_standing_on == 40:
+        clock.unschedule(air_countdown)
+        draw_text("Congratulations, "+ PLAYER_NAME +"!", 0)
+        draw_text("Mission success! You have made it to safety.", 1)
+        game_over = True
+        sounds.take_off.play()
+        #game_completion_sequence()
+
+    elif prop_standing_on == 16:
+        energy += 1
+        if energy > 100:
+            energy = 100
+        use_message = "You munch the lettuce and get a little energy back"
+        #draw_energy_air()
+
+    elif item_carrying == 60 or prop_standing_on == 60:
+        use_message = "You fix " + objects[60][3] + " to the suit"
+        air_fixed = True
+        air = 90
+        #air_countdown()
+        remove_prop_from_pockets(60)
+    elif prop_standing_on == 40:
+        clock.unschedule(air_countdown)
+        draw_text("Congratulations, "+ PLAYER_NAME +"!", 0)
+        draw_text("Mission success! You have made it to safety.", 1)
+        game_over = True
+        sounds.take_off.play()
+        #game_completion_sequence()
+
+    elif prop_standing_on == 16:
+        energy += 1
+        if energy > 100:
+            energy = 100
+        use_message = "You munch the lettuce and get a little energy back"
+        #draw_energy_air()
+
+
+    elif item_carrying == 68 or prop_standing_on == 68:
+        energy = 100
+        use_message = "You use the food to restore your energy"
+        remove_prop_from_pockets(68)
+        #draw_energy_air()
+
 
 
 #print(currentroom)
