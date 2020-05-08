@@ -3,6 +3,7 @@ from objects import *
 from scenery import *
 from player import *
 from props import *
+from recipes import *
 import time
 roommap =[
         [1,1,1,1,1,1],
@@ -14,7 +15,7 @@ roommap =[
         [1,1,1,1,1,1]
 ]
 WIDTH = 800
-HEIGHT = 660
+HEIGHT = 800
 TILESIZE = 30
 topleftx = 100
 toplefty = 240
@@ -67,8 +68,8 @@ def draw():
     #make outer window
     box = Rect((0,150),(800,660))
     screen.draw.filled_rect(box, RED)
-    box = Rect((0,0),(800,toplefty + (roomheight-1)* TILESIZE))
-    screen.surface.set_clip(box)
+    #box = Rect((0,0),(800,toplefty + (roomheight-1)* TILESIZE))
+    #screen.surface.set_clip(box)
     #stage 1 - draw the floor and items the player may stand on
     if currentroom < 26:
         floortype = 2
@@ -121,7 +122,7 @@ def draw():
                         screen.blit(shadowimage,(topleftx+ x*TILESIZE,toplefty + y*TILESIZE))
         if playery == y:
             drawplayer()
-    screen.surface.set_clip(None)
+    #screen.surface.set_clip(None)
     draw_energy_air()
     if firstdraw:
         display_inventory()
@@ -146,6 +147,8 @@ def drawtext(thetext, linenum):
     screen.draw.text(thetext, (20,text_lines[linenum]), color = (255,255,255))
 def draw_energy_air():
     box = Rect((20,765),(350,20))
+    screen.draw.filled_rect(box, (0,0,0))
+    box = Rect((0,750),(WIDTH,50))
     screen.draw.filled_rect(box, (0,0,0))
     screen.draw.text("AIR", (20,765), color =(0,0,255))
     screen.draw.text("ENERGY", (180,765), color =(255,255,0))
@@ -543,6 +546,8 @@ def display_inventory():
 #################################
 
 def use_prop():
+    global suit_stitched
+    global air_fixed
     use_message = "You fiddle around with it but don't get anywhere."
     standard_responses = {
         4: "Air is running out! You can't take this lying down!",
@@ -566,8 +571,7 @@ def use_prop():
     for this_prop in [prop_standing_on, item_carrying]:
         if this_prop in standard_responses:
             use_message = standard_responses[this_prop]
-    drawtext(use_message, 0)
-    time.sleep(0.5)
+
 
     #code for specific items
 
@@ -577,18 +581,18 @@ def use_prop():
     elif prop_standing_on == 11:
         use_message = "AIR: " + str(air) + \
                   "% / ENERGY " + str(energy) + "% / "
-    if not suit_stitched:
-        use_message += "*ALERT* SUIT FABRIC TORN / "
-    if not air_fixed:
-        use_message += "*ALERT* SUIT AIR BOTTLE MISSING"
-    if suit_stitched and air_fixed:
-        use_message += " SUIT OK"
-        draw_text(use_message, 0)
-        sounds.say_status_report.play()
-        time.sleep(0.5)
-        # If "on" the computer, player intention is clearly status update.
-        # Return to stop another object use accidentally overriding this.
-        return
+        if not suit_stitched:
+            use_message += "*ALERT* SUIT FABRIC TORN / "
+        if not air_fixed:
+            use_message += "*ALERT* SUIT AIR BOTTLE MISSING"
+        if suit_stitched and air_fixed:
+            use_message += " SUIT OK"
+            draw_text(use_message, 0)
+            sounds.say_status_report.play()
+            time.sleep(0.5)
+            # If "on" the computer, player intention is clearly status update.
+            # Return to stop another object use accidentally overriding this.
+            return
     elif item_carrying == 60 or prop_standing_on == 60:
         use_message = "You fix " + OBJECT_LIST[60][3] + " to the suit"
         air_fixed = True
@@ -628,7 +632,7 @@ def use_prop():
         if energy > 100:
             energy = 100
         use_message = "You munch the lettuce and get a little energy back"
-        #draw_energy_air()
+        draw_energy_air()
 
     elif item_carrying == 60 or prop_standing_on == 60:
         use_message = "You fix " + objects[60][3] + " to the suit"
@@ -649,15 +653,74 @@ def use_prop():
         if energy > 100:
             energy = 100
         use_message = "You munch the lettuce and get a little energy back"
-        #draw_energy_air()
+        draw_energy_air()
 
 
     elif item_carrying == 68 or prop_standing_on == 68:
         energy = 100
         use_message = "You use the food to restore your energy"
         remove_prop_from_pockets(68)
-        #draw_energy_air()
+        draw_energy_air()
+    #recipes - you need to hold one item and stand on the other one
+    for r in RECIPES:
+        ingredient1 = r[0]
+        ingredient2 = r[1]
+        combination = r[2]
 
+        if (item_carrying == ingredient1 and prop_standing_on == ingredient2) or \
+        (item_carrying == ingredient2 and prop_standing_on == ingredient1):
+            use_message = "You combine " + OBJECT_LIST[ingredient1][3] \
+                + " and " + OBJECT_LIST[ingredient2][3] \
+                + " to make " + OBJECT_LIST[combination][3]
+            #remove item carrying from pockets
+            in_my_pockets.remove(item_carrying)
+            #remove item standing on from floor
+            if prop_standing_on in propslist.keys():
+                floortype = 0
+                if currentroom < 26:
+                    floortype = 2
+                roommap[playery][playerx] = floortype
+                propslist[prop_standing_on][0] = 0
+            add_item_to_pockets(combination)
+            sounds.combine.play()
+
+
+    drawtext(use_message, 0)
+    time.sleep(0.5)
+
+#GAME COMPLETION
+def game_completion_sequence():
+    global launch_frame
+    box = Rect((0,150), (WIDTH, 600))
+    screen.draw.filled_rect(box, (128, 0, 0))
+
+    for y in range(13):
+        for x in range(13):
+            screen.blit(images.soil, (topleftx+ x*TILESIZE,toplefty + y*TILESIZE-images.soil.get_height()))
+    launch
+    _frame += 1
+    if launch_frame < 9:
+        #TODO: draw images
+        #TODO: draw shadow
+        clock.schedule(game_completion_sequence, 0.25)
+    else:
+        #draw mission complete
+        sounds.completion.play()
+        sounds.say_mission_complete.play()
+
+#AIR COUNTDWON
+def air_countdown():
+    global air
+
+    #TODO: dont run if game is over
+    air -= 1
+    if air == 20:
+        sounds.say_air_low.play()
+    if air == 10:
+        sounds.say_act_now.play()
+    draw_energy_air()
+
+    #TODO:end the game when air is zero
 
 
 #print(currentroom)
