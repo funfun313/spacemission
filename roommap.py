@@ -24,6 +24,9 @@ roomheight = 0
 roomwidth = 0
 currentroom = 31
 firstdraw = True
+door_frames, door_shadow_frames = [], []
+door_frame_num, door_object_num = 0, 0
+
 #########################
 #### Player Variables ###
 #########################
@@ -245,9 +248,11 @@ def autogenroom(roomnum):
     else:
         #top row
         if exittop:
-            temprow = [1] * int(width / 2-1)
-            temprow = temprow + [0]*2
-            temprow = temprow + [1] * (width - len(temprow))
+            temprow = [1] * width
+            exitpos = width // 2
+            temprow[exitpos-1] = 0
+            temprow[exitpos] = 0
+            temprow[exitpos + 1] = 0
             temproommap.append(temprow)
         else:
             temprow = [1] * width
@@ -273,9 +278,11 @@ def autogenroom(roomnum):
             temproommap.append(temprow)
         #bottom row
         if exitbottom:
-            temprow = [1] * int(width / 2-1)
-            temprow = temprow + [0]*2
-            temprow = temprow + [1] * (width - len(temprow))
+            temprow = [1] * width
+            exitpos = width // 2
+            temprow[exitpos-1] = 0
+            temprow[exitpos] = 0
+            temprow[exitpos + 1] = 0
             temproommap.append(temprow)
         else:
             temprow = [1] * width
@@ -411,7 +418,10 @@ def gameLoop():
             examine_prop()
         if keyboard.u:
             use_prop()
-
+        if keyboard.t:
+            open_door(20)
+        if keyboard.w:
+            close_door(20)
 
         if roommap[playery][playerx] not in items_player_may_stand_on:
             playery = fromplayery
@@ -721,6 +731,56 @@ def air_countdown():
     draw_energy_air()
 
     #TODO:end the game when air is zero
+
+#################################
+########### DOORS ###############
+#################################
+def open_door(doornum):
+    global door_frames, door_shadow_frames
+    global door_frame_num, door_object_num
+
+    door_frames = [images.door1, images.door2, images.door3, images.door4, images.floor]
+    door_shadow_frames = [images.door1_shadow, images.door2_shadow, images.door3_shadow, images.door4_shadow, images.door_shadow]
+
+    door_frame_num = 0
+    door_object_num = doornum
+    do_door_animation()
+
+def close_door(doornum):
+    global door_frames, door_shadow_frames
+    global door_frame_num, door_object_num
+
+    door_frames = [images.floor, images.door4, images.door3, images.door2, images.door1]
+    door_shadow_frames = [images.door_shadow, images.door4_shadow, images.door3_shadow, images.door2_shadow, images.door1_shadow]
+
+    door_frame_num = 0
+    door_object_num = doornum
+    if playery == propslist[doornum][1]:
+        if playery == 0:
+            #move them down
+            playery = 1
+        else:
+            playery = roomheight-2
+    do_door_animation()
+
+def do_door_animation():
+    global door_frames, door_shadow_frames
+    global door_frame_num, door_object_num
+    global OBJECT_LIST
+
+    OBJECT_LIST[door_object_num][0] =  door_frames[door_frame_num]
+    OBJECT_LIST[door_object_num][1] = door_shadow_frames[door_frame_num]
+
+    door_frame_num += 1
+    if door_frame_num == 5:
+        if door_frames[-1] == images.floor:
+            propslist[door_object_num][0] = 0 #move to room 0
+        autogenroom(currentroom)
+    else:
+        clock.schedule(do_door_animation, 0.15)
+
+
+
 
 
 #print(currentroom)
