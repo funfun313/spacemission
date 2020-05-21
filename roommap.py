@@ -418,10 +418,14 @@ def gameLoop():
             examine_prop()
         if keyboard.u:
             use_prop()
-        if keyboard.t:
-            open_door(20)
-        if keyboard.w:
-            close_door(20)
+        if keyboard.x:
+            currentroom = int(input("Enter room number: "))
+            playerx = 2
+            playery = 2
+            autogenroom(currentroom)
+            startroom()
+            sounds.teleport.play()
+
 
         if roommap[playery][playerx] not in items_player_may_stand_on:
             playery = fromplayery
@@ -643,7 +647,6 @@ def use_prop():
             energy = 100
         use_message = "You munch the lettuce and get a little energy back"
         draw_energy_air()
-
     elif item_carrying == 60 or prop_standing_on == 60:
         use_message = "You fix " + objects[60][3] + " to the suit"
         air_fixed = True
@@ -665,7 +668,16 @@ def use_prop():
         use_message = "You munch the lettuce and get a little energy back"
         draw_energy_air()
 
-
+    elif prop_standing_on == 42:
+        if currentroom == 27:
+            open_door(26)
+            propslist[25][0]=0
+            propslist[26][0] = 0
+        clock.schedule_unique(shut_engineering_door, 60)
+        use_message = "You press the button"
+        drawtext("Door to engineering bay is open for 60 seconds", 1)
+        sounds.say_doors_open.play()
+        sounds.doors.play()
     elif item_carrying == 68 or prop_standing_on == 68:
         energy = 100
         use_message = "You use the food to restore your energy"
@@ -693,7 +705,15 @@ def use_prop():
                 propslist[prop_standing_on][0] = 0
             add_item_to_pockets(combination)
             sounds.combine.play()
-
+    #ACCESS CARDS
+    ACCESS_DICT = {79: 22, 80:23, 81:24}
+    if item_carrying in ACCESS_DICT:
+        doornum = ACCESS_DICT[item_carrying]
+        if propslist[doornum][0] == currentroom:
+            use_message = "You unlock the door!"
+            sounds.say_doors_open.play()
+            sounds.doors.play()
+            open_door(doornum)
 
     drawtext(use_message, 0)
     time.sleep(0.5)
@@ -749,8 +769,9 @@ def open_door(doornum):
 def close_door(doornum):
     global door_frames, door_shadow_frames
     global door_frame_num, door_object_num
+    global playery
 
-    door_frames = [images.floor, images.door4, images.door3, images.door2, images.door1]
+    door_frames = [images.door4, images.door3, images.door2, images.door1, images.door]
     door_shadow_frames = [images.door_shadow, images.door4_shadow, images.door3_shadow, images.door2_shadow, images.door1_shadow]
 
     door_frame_num = 0
@@ -767,21 +788,41 @@ def do_door_animation():
     global door_frames, door_shadow_frames
     global door_frame_num, door_object_num
     global OBJECT_LIST
-
+    print(door_frame_num)
     OBJECT_LIST[door_object_num][0] =  door_frames[door_frame_num]
     OBJECT_LIST[door_object_num][1] = door_shadow_frames[door_frame_num]
-
+    #temporary - check later
+    #if door_frame_num == 0  and propslist[door_object_num][0] == 0:
+     #   propslist[door_object_num][0] = currentroom
     door_frame_num += 1
     if door_frame_num == 5:
         if door_frames[-1] == images.floor:
             propslist[door_object_num][0] = 0 #move to room 0
         autogenroom(currentroom)
+
     else:
         clock.schedule(do_door_animation, 0.15)
 
+def shut_engineering_door():
+    propslist[25][0]= 32
+    propslist[26][0] = 27
+    autogenroom(currentroom)
 
+    if currentroom == 27:
+        close_door(26)
+    elif currentroom == 32:
+        close_door(25)
 
+    drawtext("The computer tells you the doors are closed", 1)
+    sounds.say_doors_closed.play()
+def door_in_room26():
+    door_frames = [images.door, images.door1, images.door2, images.door3, images.door4, images.floor]
+    door_shadow_frames = [images.door_shadowimages.door1_shadow, images.door2_shadow, images.door3_shadow, images.door4_shadow, None]
 
+    if currentroom != 26:
+        clock.unschedule(door_in_room26)
+        return
+    #start here next week :))
 
 #print(currentroom)
 autogenroom(currentroom)
