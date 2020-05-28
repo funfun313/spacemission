@@ -24,9 +24,12 @@ roomheight = 0
 roomwidth = 0
 currentroom = 31
 firstdraw = True
+############################
+######### DOOR FRAMES ######
+############################
 door_frames, door_shadow_frames = [], []
 door_frame_num, door_object_num = 0, 0
-
+airlock_door_frame = 0
 #########################
 #### Player Variables ###
 #########################
@@ -47,6 +50,7 @@ playerimageshadow = PLAYER_SHADOW[playerdirection][playerframe]
 air, energy = 100,100
 suit_stitched, air_fixed = False, False
 launch_frame = 0
+game_over = False
 
 
 
@@ -131,7 +135,8 @@ def draw():
         display_inventory()
         startroom()
         firstdraw = False
-
+    if game_over:
+        screen.draw.text("GAME OVER", (120, 400), color = "white", fontsize = 128, shadow = (1,1), scolor = "black")
 def drawobject():
     drawimage = OBJECT_LIST[item][0]
     screen.blit(drawimage,(topleftx+ x*TILESIZE,toplefty + y*TILESIZE-drawimage.get_height()))
@@ -323,8 +328,12 @@ def autogenroom(roomnum):
     roomheight = len(roommap)
     roomwidth = len(roommap[0])
 def startroom():
+    global airlock_door_frame
     drawtext("You are here: " + GAME_MAP[currentroom][0],0)
-    drawtext("Testing line 2", 1)
+    if currentroom == 26:
+        airlock_door_frame = 0
+        clock.schedule_interval(door_in_room26, 0.05)
+        print(roommap)
 def gameLoop():
     global currentroom
     global playerx, playery, playerdirection, playerframe, playerimage, playeroffsetx, playeroffsety, fromplayerx
@@ -366,8 +375,8 @@ def gameLoop():
         if playerx == roomwidth:
             #move right
             currentroom += 1
-            startroom()
             autogenroom(currentroom)
+            startroom()
             playerx = 0 #zero once left side doors
             if currentroom > 25:
                 playery = int(roomheight / 2)
@@ -375,8 +384,8 @@ def gameLoop():
         if playerx == -1:
             #room left
             currentroom -= 1
-            startroom()
             autogenroom(currentroom)
+            startroom()
             playerx = roomwidth-1
             if currentroom > 25:
                 playery = int(roomheight / 2)
@@ -385,8 +394,8 @@ def gameLoop():
         if playery == -1:
             #room up
             currentroom -= 5
-            startroom()
             autogenroom(currentroom)
+            startroom()
             if currentroom > 25 or currentroom == 21:
                 playerx = int(roomwidth / 2)
             playery = roomheight - 1
@@ -394,8 +403,8 @@ def gameLoop():
         if playery == roomheight:
             #room down
             currentroom += 5
-            startroom()
             autogenroom(currentroom)
+            startroom()
             if currentroom > 25 or currentroom == 26:
                 playerx = int(roomwidth / 2)
             playery = 1
@@ -406,6 +415,8 @@ def gameLoop():
             pick_up_prop()
         if keyboard.d and item_carrying:
             drop_prop(fromplayerx,fromplayery)
+            #print(roommap)
+
             #leave the item behind
         if keyboard.tab and len(in_my_pockets) > 0:
             selected_item += 1
@@ -611,7 +622,7 @@ def use_prop():
         use_message = "You fix " + OBJECT_LIST[60][3] + " to the suit"
         air_fixed = True
         air = 90
-        #air_countdown()
+        air_countdown()
         remove_prop_from_pockets(60)
     elif (item_carrying == 58 or prop_standing_on == 58) \
     and not suit_stitched:
@@ -651,7 +662,7 @@ def use_prop():
         use_message = "You fix " + objects[60][3] + " to the suit"
         air_fixed = True
         air = 90
-        #air_countdown()
+        air_countdown()
         remove_prop_from_pockets(60)
     elif prop_standing_on == 40:
         clock.unschedule(air_countdown)
@@ -742,15 +753,28 @@ def game_completion_sequence():
 def air_countdown():
     global air
 
-    #TODO: dont run if game is over
+    if game_over:
+        return #already dead
+
     air -= 1
     if air == 20:
         sounds.say_air_low.play()
     if air == 10:
         sounds.say_act_now.play()
     draw_energy_air()
+    if air <= 0:
+        end_the_game("You're out of air!")
 
-    #TODO:end the game when air is zero
+
+def end_the_game(msg):
+    global game_over
+    drawtext(msg, 0)
+    game_over = True
+    sounds.say_mission_fail.play()
+    sounds.gameover.play()
+
+
+
 
 #################################
 ########### DOORS ###############
@@ -815,16 +839,35 @@ def shut_engineering_door():
 
     drawtext("The computer tells you the doors are closed", 1)
     sounds.say_doors_closed.play()
+
 def door_in_room26():
+    global airlock_door_frame
     door_frames = [images.door, images.door1, images.door2, images.door3, images.door4, images.floor]
-    door_shadow_frames = [images.door_shadowimages.door1_shadow, images.door2_shadow, images.door3_shadow, images.door4_shadow, None]
+    door_shadow_frames = [images.door_shadow, images.door1_shadow, images.door2_shadow, images.door3_shadow, images.door4_shadow, None]
 
     if currentroom != 26:
         clock.unschedule(door_in_room26)
         return
-    #start here next week :))
+    if ((playery == 8 and playerx == 2) or propslist[63] == [26,8,2]) \
+        and propslist[21][0] == 26:
+        airlock_door_frame += 1
+        if airlock_door_frame == 5:
+            propslist[21][0] = 0
+            #roommap[0][1] = 0
+            #roommap[0][2] = 0
+            #roommap[0][3] = 0
+            autogenroom(currentroom)
+    if ((playery != 8 or playerx != 2) and propslist[63] != [26,8,2]) and airlock_door_frame > 0:
+        if airlock_door_frame == 5:
+            propslist[21][0] = 26
+            autogenroom(currentroom)
+        airlock_door_frame -= 1
+
+    OBJECT_LIST[21][0] = door_frames[airlock_door_frame]
+    OBJECT_LIST[21][1] = door_shadow_frames[airlock_door_frame]
 
 #print(currentroom)
 autogenroom(currentroom)
 clock.schedule_interval(gameLoop, 0.02)
 clock.schedule_interval(adjust_wall_transparency, 0.05)
+clock.schedule_interval(air_countdown, 0.1)
