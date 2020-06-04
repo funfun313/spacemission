@@ -4,6 +4,7 @@ from scenery import *
 from player import *
 from props import *
 from recipes import *
+from hazards import *
 import time
 roommap =[
         [1,1,1,1,1,1],
@@ -24,15 +25,21 @@ roomheight = 0
 roomwidth = 0
 currentroom = 31
 firstdraw = True
+
+
 ############################
 ######### DOOR FRAMES ######
 ############################
+
 door_frames, door_shadow_frames = [], []
 door_frame_num, door_object_num = 0, 0
 airlock_door_frame = 0
+
+
 #########################
 #### Player Variables ###
 #########################
+
 playerx = 5
 playery = 2
 playerframe = 0
@@ -44,13 +51,17 @@ playeroffsetx = 0
 playeroffsety = 0
 playerimageshadow = PLAYER_SHADOW[playerdirection][playerframe]
 
+
 ######################################
 ########### GAME VARIABLES #############
 #######################################
+
 air, energy = 100,100
 suit_stitched, air_fixed = False, False
 launch_frame = 0
 game_over = False
+currentroom_hazardlist = []
+hazard_map = []
 
 
 
@@ -59,6 +70,11 @@ RED =(128,0,0)
 
 PILLARS = [images.pillar, images.pillar_95, images.pillar_80, images.pillar_60, images.pillar_50]
 wall_transparency_frame = 0
+
+
+##############################
+###### DRAW ##################
+##############################
 
 def draw():
     global roomheight, firstdraw
@@ -127,6 +143,10 @@ def draw():
                             screen.blit(shadowimage,(topleftx+ (x+i)*TILESIZE,toplefty + y*TILESIZE))
                     else:
                         screen.blit(shadowimage,(topleftx+ x*TILESIZE,toplefty + y*TILESIZE))
+            hazard_here = hazard_map[y][x]
+            if hazard_here != 0:
+                screen.blit(OBJECT_LIST[hazard_here][0], (topleftx+ x*TILESIZE,toplefty + y*TILESIZE))
+                #NOT SHOWING YET
         if playery == y:
             drawplayer()
     #screen.surface.set_clip(None)
@@ -179,7 +199,7 @@ def adjust_wall_transparency():
         wall_transparency_frame -= 1
 
 def autogenroom(roomnum):
-    global roommap
+    global roommap, hazard_map
     temproommap = []
     temprow = []
     width = GAME_MAP[roomnum][2]
@@ -321,12 +341,18 @@ def autogenroom(roomnum):
             for tnum in range(1, pimage_tiles):
                 temproommap[prop_y][prop_x + tnum] = 255
 
-
     roommap = temproommap
     global roomheight
     global roomwidth
     roomheight = len(roommap)
     roomwidth = len(roommap[0])
+
+    # generate a blank (zero) hazard map the same size as the room
+    hazard_map = []
+    for row in range(roomheight):
+        hazard_map.append([0] * roomwidth)
+
+
 def startroom():
     global airlock_door_frame
     drawtext("You are here: " + GAME_MAP[currentroom][0],0)
@@ -334,6 +360,14 @@ def startroom():
         airlock_door_frame = 0
         clock.schedule_interval(door_in_room26, 0.05)
         print(roommap)
+    clock.unschedule(hazard_move)
+    hazard_start()
+
+
+#########################
+#### GAME LOOP ##########
+#########################
+
 def gameLoop():
     global currentroom
     global playerx, playery, playerdirection, playerframe, playerimage, playeroffsetx, playeroffsety, fromplayerx
@@ -749,7 +783,7 @@ def game_completion_sequence():
         sounds.completion.play()
         sounds.say_mission_complete.play()
 
-#AIR COUNTDWON
+#AIR COUNTDOWN
 def air_countdown():
     global air
 
@@ -773,8 +807,60 @@ def end_the_game(msg):
     sounds.say_mission_fail.play()
     sounds.gameover.play()
 
+def alarm():
+    drawtext("Air is running out, " + PLAYER_NAME +
+        "! Get to safety, then radio for help!", 1)
+    sounds.alarm.play()
+    sounds.say_breach.play()
+
+################################
+###     HAZARDS            #####
+################################
+
+def deplete_energy(penalty):
+    global energy, game_over
+
+    if game_over:
+        return
+    energy -= penalty
+    draw_energy_air()
+    if energy <= 0:
+        end_the_game("You're out of energy!")
+
+def hazard_start():
+    global currentroom_hazardlist, hazard_map
+    if currentroom in hazard_data:
+        currentroom_hazardlist = hazard_data[currentroom]
+        for h in currentroom_hazardlist:
+            hazard_map[h[0]][h[1]] = 49 + (currentroom % 3)
+
+        clock.schedule_interval(hazard_move, 0.15)
+
+def hazard_move():
 
 
+    if game_over:
+        return
+
+    for h in currentroom_hazardlist:
+        hy = h[0]
+        hx = h[1]
+        hdir = h[2]
+
+        old_hx = hx
+        old_hy= hy
+
+        hazard_map[hy][hx] = 0
+
+        if hdir == 1:
+            hy += 1
+        if hdir == 2:
+            hx += 1
+        if hdir == 3:
+            hy -= 1
+        if hdir == 4:
+            hx -= 1
+        #IN PROGRESS #CHECK DRAW FUNCTION ALSO
 
 #################################
 ########### DOORS ###############
@@ -866,8 +952,10 @@ def door_in_room26():
     OBJECT_LIST[21][0] = door_frames[airlock_door_frame]
     OBJECT_LIST[21][1] = door_shadow_frames[airlock_door_frame]
 
+
 #print(currentroom)
 autogenroom(currentroom)
 clock.schedule_interval(gameLoop, 0.02)
 clock.schedule_interval(adjust_wall_transparency, 0.05)
-clock.schedule_interval(air_countdown, 0.1)
+clock.schedule_interval(air_countdown, 5)
+clock.schedule_unique(alarm, 10)
