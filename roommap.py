@@ -145,7 +145,8 @@ def draw():
                         screen.blit(shadowimage,(topleftx+ x*TILESIZE,toplefty + y*TILESIZE))
             hazard_here = hazard_map[y][x]
             if hazard_here != 0:
-                screen.blit(OBJECT_LIST[hazard_here][0], (topleftx+ x*TILESIZE,toplefty + y*TILESIZE))
+                screen.blit(OBJECT_LIST[hazard_here][0], (topleftx+ x*TILESIZE,toplefty + (y-1) *TILESIZE))
+
                 #NOT SHOWING YET
         if playery == y:
             drawplayer()
@@ -472,10 +473,12 @@ def gameLoop():
             sounds.teleport.play()
 
 
-        if roommap[playery][playerx] not in items_player_may_stand_on:
+        if roommap[playery][playerx] not in items_player_may_stand_on or hazard_map[playery][playerx] != 0:
             playery = fromplayery
             playerx = fromplayerx
             playerframe = 0
+        if roommap[playery][playerx] == 48: #toxic floor
+            deplete_energy(1)
 
     if playerdirection == "right":
         playeroffsetx = -1 + 0.25 * playerframe
@@ -860,7 +863,58 @@ def hazard_move():
             hy -= 1
         if hdir == 4:
             hx -= 1
-        #IN PROGRESS #CHECK DRAW FUNCTION ALSO
+
+        hazard_bounce = False
+
+        if (hx == playerx and hy == playery) or (hx == fromplayerx and hy == fromplayery):
+            sounds.ouch.play()
+            deplete_energy(10)
+            hazard_bounce = True
+
+        if hx == roomwidth:
+            hazard_bounce = True
+            hx = roomwidth - 1
+
+        if hx == -1:
+            hazard_bounce = True
+            hx = 0
+
+        if hy == roomheight:
+            hazard_bounce = True
+            hy = roomheight - 1
+
+        if hy == -1:
+            hazard_bounce = True
+            hy = 0
+
+        #walls and other large objects or hits another hazard
+        if roommap[hy][hx] not in items_player_may_stand_on or hazard_map[hy][hx] != 0:
+            hazard_bounce = True
+
+
+
+        if hazard_bounce:
+            #time to turn!
+            hx = old_hx
+            hy = old_hy
+
+            hdir = hdir + h[3]
+
+            if hdir > 4:
+                hdir = hdir - 4
+
+            if hdir < 1:
+                hdir = hdir + 4
+            h[2] = hdir
+
+
+
+        hazard_map[hy][hx] = 49 + (currentroom % 3)
+        h[0] = hy
+        h[1] = hx
+
+
+
 
 #################################
 ########### DOORS ###############
@@ -959,3 +1013,4 @@ clock.schedule_interval(gameLoop, 0.02)
 clock.schedule_interval(adjust_wall_transparency, 0.05)
 clock.schedule_interval(air_countdown, 5)
 clock.schedule_unique(alarm, 10)
+sounds.mission.play()

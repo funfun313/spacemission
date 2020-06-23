@@ -35,6 +35,6 @@ print("Prop checksum:", checksum)
 assert checksum == 61414, "Error in props data"
 
 
-in_my_pockets = [55, 63]
+in_my_pockets = [55]
 selected_item = 0 # the first item
 item_carrying = in_my_pockets[selected_item]
